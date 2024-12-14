@@ -6,7 +6,7 @@
 
 <div align="center">
   <a href="https://www.youtube.com/watch?v=rzzFaNefDLo" target="_blank">
-    <img src="https://img.youtube.com/vi/rzzFaNefDLo/0.jpg" alt="Project Banner" style="border-radius: 15px;">
+    <img src="https://img.youtube.com/vi/rzzFaNefDLo/0.jpg" alt="Project Banner" style="border-radius: 15px;width: 100%;">
   </a>
 </div>
 
