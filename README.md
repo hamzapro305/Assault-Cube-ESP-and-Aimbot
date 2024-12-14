@@ -5,7 +5,9 @@
 ---
 
 <div align="center">
-  <img src="https://img.youtube.com/vi/rzzFaNefDLo/0.jpg" alt="Project Banner" style="border-radius: 15px;">(https://www.youtube.com/watch?v=rzzFaNefDLo)
+  <a href="https://www.youtube.com/watch?v=rzzFaNefDLo" target="_blank">
+    <img src="https://img.youtube.com/vi/rzzFaNefDLo/0.jpg" alt="Project Banner" style="border-radius: 15px;">
+  </a>
 </div>
 
 ---
