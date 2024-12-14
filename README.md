@@ -5,8 +5,7 @@
 ---
 
 <div align="center">
-  <img src="https://img.youtube.com/vi/rzzFaNefDLo/0.jpg" alt="Project Banner" style="border-radius: 15px;">
-  [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/rzzFaNefDLo/0.jpg)](https://www.youtube.com/watch?v=rzzFaNefDLo)
+  <img src="https://img.youtube.com/vi/rzzFaNefDLo/0.jpg" alt="Project Banner" style="border-radius: 15px;">(https://www.youtube.com/watch?v=rzzFaNefDLo)
 </div>
 
 ---
