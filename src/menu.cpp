@@ -12,7 +12,7 @@
 #include "esp.h"
 #include "settings.h"
 
-const ImVec2 initWindowSize = ImVec2(400, 400);
+const ImVec2 initWindowSize = ImVec2(500, 700);
 bool showMenu = false;
 bool initialized = false;
 bool contextCreated = false;
@@ -97,13 +97,26 @@ void testinSettings() {
 }
 
 void espSettings() {
-	if ( !ImGui::BeginTabItem( "EWP" ) ) {
+	if ( !ImGui::BeginTabItem( "ESP" ) ) {
 		return;
 	}
 	ImGui::Checkbox( "Enabled" , &Settings::ESP::enabled );
 	ImGui::Checkbox( "Draw Team" , &Settings::ESP::drawTeam );
 	ImGui::ColorEdit4( "Team Color" , ( float* ) &Settings::ESP::teamColor->Value );
 	ImGui::ColorEdit4( "Enemy Color" , ( float* ) &Settings::ESP::enemyColor->Value );
+	ImGui::EndTabItem();
+}
+
+void aimbotSettings() {
+	if ( !ImGui::BeginTabItem( "Aimbot" ) ) {
+		return;
+	}
+	ImGui::Checkbox( "Enabled" , &Settings::Aimbot::enabled );
+	ImGui::Checkbox( "Smoothing" , &Settings::Aimbot::smoothing );
+	ImGui::SliderFloat( "Smoothing Amount" , &Settings::Aimbot::smoothingAmount, 0.0f, 10.0f );
+	ImGui::Checkbox( "Check in Fov" , &Settings::Aimbot::checkInFov );
+	ImGui::SliderFloat( "Fov" , &Settings::Aimbot::fov, 0.0f, 180.0f );
+	ImGui::Checkbox( "Draw Fov Circle" , &Settings::Aimbot::drawFovCircle );
 	ImGui::EndTabItem();
 }
 
@@ -115,6 +128,7 @@ void Menu::render()
 	ImGui::Text("Hello,  world!");
 	if ( ImGui::BeginTabBar("Tabbar") ) {
 		espSettings();
+		aimbotSettings();
 		testinSettings();
 		ImGui::EndTabBar();
 	}
@@ -164,6 +178,7 @@ BOOL __stdcall Menu::newSwapBuffers( HDC hdc )
 	Menu::startRenderer();
 	Menu::render();
 	ESP::drawEsp();
+	ESP::aimbot();
 	Menu::endRender();
 
 	wglMakeCurrent( hdc , gameContext );

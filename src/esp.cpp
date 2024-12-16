@@ -5,9 +5,15 @@
 #include "settings.h"
 #include "imgui.h"
 #include <iostream>
+#include <ctime>
 
 const float FOV = 90;
+const vec3 centerScreenPos = { 1024 / 2 , 768 / 2 , 0};
+float currAimTime = 0;
+clock_t lastAimTime = clock();
+Player* currTarget = nullptr;
 
+#define min(a, b) a < b ? a : b
 void normalizeAngle(vec3& angle) {
 	if (angle.x > 360) angle.x -= 360;
 	if (angle.x < 0) angle.x += 360;
@@ -39,6 +45,27 @@ bool isValidTarget(Player* player) {
 	return true;
 }
 
+bool isInFovW2S(vec3& screenLoc) {
+	if ( abs(centerScreenPos.Distance(screenLoc)) < Settings::Aimbot::fov) {
+		return true;
+	}
+	return false;
+}
+
+void smoothingAngle(vec3& from, vec3& to, float percent) {
+	vec3 delta = to - from;
+	normalizeAngle( delta );
+	if ( delta.x > 180 ) delta.x -= 360;
+	if ( delta.x < 180 ) delta.x += 360;
+	if ( delta.y > 45 ) delta.y -= 45;
+	if ( delta.y < -45 ) delta.y += 45;
+
+	from.x += delta.x * percent;
+	from.y += delta.y * percent;
+	normalizeAngle( from );
+}
+
+
 Player* ESP::getNearestPlayer() {
 	Player* nearestPlayer = nullptr;
 	float nearestDistance = 9999999.0f;
@@ -54,26 +81,28 @@ Player* ESP::getNearestPlayer() {
 	return nearestPlayer;
 }
 
-Player* ESP::getNearestEntityAngle() {
-	vec3 playerAngle{ localPlayerPtr->yaw + 180, localPlayerPtr->pitch, 0 };
-	normalizeAngle(playerAngle);
-
+Player* getNearestEntityW2S() {
 	Player* nearestPlayer = nullptr;
-	float smallestAngle = 9999999.0f;
+	float nearestDistance = 9999999.0f;
+	float distance = 0;
+	for ( int i = 1; i <= noPlayers; i++ ) {
+		Player* player = entityList->players[ i ];
+		if ( player->health <= 0 || player->health > 100 || player->team == localPlayerPtr->team ) continue;
 
-	for (int i = 1; i < noPlayers + 1; i++) {
-		Player* player = entityList->players[i];
-		if (!isValidTarget(player)) continue;
+		vec3 headPos = { player->o.x, player->o.y, player->o.z };
+		vec3 headScreenPos = WorldToScreen( headPos );
 
-		vec3 targetAngle = CalcAngle(localPlayerPtr->pos, player->pos);
+		if ( headScreenPos.z < 0 ) {
+			continue;
+		}
 
-		vec3 angleDiff = playerAngle - targetAngle;
-		normalizeAngle(angleDiff);
-
-		float angleMagnitude = angleDiff.Length();
-
-		if (angleMagnitude < smallestAngle) {
-			smallestAngle = angleMagnitude;
+		if ( Settings::Aimbot::checkInFov && !isInFovW2S( headScreenPos ) ) {
+			continue;
+		}
+		headScreenPos.z = 0;
+		distance = abs( centerScreenPos.Distance( headScreenPos ) );
+		if ( distance < nearestDistance ) {
+			nearestDistance = distance;
 			nearestPlayer = player;
 		}
 	}
@@ -81,14 +110,56 @@ Player* ESP::getNearestEntityAngle() {
 }
 
 void ESP::aimbot() {
-	if (!GetAsyncKeyState(VK_CONTROL)) return;
-	Player* target = ESP::getNearestEntityAngle();
+	if ( Settings::Aimbot::drawFovCircle ) {
+		ImGui::GetBackgroundDrawList()->AddCircle(
+			ImVec2( centerScreenPos.x , centerScreenPos.y ) ,
+			Settings::Aimbot::fov ,
+			IM_COL32( 255 , 255 , 255 , 255 ) ,
+			100
+		);
+	}
+	if ( !Settings::Aimbot::enabled || !GetAsyncKeyState( VK_CONTROL ) ) {
+		currAimTime = 0;
+		lastAimTime = clock();
+		currTarget = nullptr;
+		return;
+	}
+	Player* target = getNearestEntityW2S();
 	if (!target) return;
 
-	vec3 angle = CalcAngle(localPlayerPtr->pos, target->pos);
-	angle.x += 180;
-	localPlayerPtr->yaw = angle.x;
-	localPlayerPtr->pitch = angle.y;
+
+	if ( target != currTarget ) {
+		currAimTime = 0;
+		lastAimTime = clock();
+		currTarget = target;
+	}
+
+	clock_t now = clock();
+	currAimTime += static_cast< float >( now - lastAimTime ) / CLOCKS_PER_SEC;
+	lastAimTime = now;
+	float percent = min( currAimTime / Settings::Aimbot::smoothingAmount , 1.0);
+
+
+	vec3 targetAngle = CalcAngle(localPlayerPtr->pos, target->pos);
+	targetAngle.x += 180;
+
+	vec3 currentAngle = { localPlayerPtr->yaw, localPlayerPtr->pitch, 0 };
+
+	if ( Settings::Aimbot::smoothing ) {
+		if ( percent >= 1 ) {
+			currAimTime = 0;
+			percent = 1;
+		}
+		smoothingAngle( currentAngle , targetAngle , percent );
+	}
+	else {
+		currentAngle = targetAngle;
+	}
+	// std::cout << "Target Angle: " << targetAngle.x << " " << targetAngle.y << " " << targetAngle.z << std::endl;
+	// std::cout << "Current Angle: " << currentAngle.x << " " << currentAngle.y << " " << currentAngle.z << std::endl;
+
+	localPlayerPtr->yaw = currentAngle.x;
+	localPlayerPtr->pitch = currentAngle.y;
 }
 
 void drawCenteredText( std::string text , float x , float y ) {
@@ -161,8 +232,6 @@ void ESP::drawEsp() {
 		// Draw the ESP bounding box
 		ImGui::GetBackgroundDrawList()->AddQuad(topLeft, bottomLeft, bottomRight, topRight, espColor );
 
-		drawCenteredText(player->name, bottomLeft.x, bottomLeft.y - 20);
-
 		drawScalingBarVertical(
 			bottomLeft.x - 5 - width / 2 , 
 			bottomLeft.y , 
@@ -173,5 +242,6 @@ void ESP::drawEsp() {
 			100,
 			ImColor( 0 , 255 , 0 , 255 )
 		);
+		drawCenteredText( player->name , bottomLeft.x , bottomLeft.y - 20 );
 	}
 }
