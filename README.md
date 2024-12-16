@@ -5,8 +5,9 @@
 ---
 
 <div align="center">
-  <img src="https://via.placeholder.com/800x400?text=Assault+Cube+ESP+Aimbot" alt="Project Banner" style="border-radius: 15px;">
-  [![Thumbnail](https://img.youtube.com/vi/rzzFaNefDLo/0.jpg)](https://www.youtube.com/watch?v=rzzFaNefDLo)
+  <a href="https://www.youtube.com/watch?v=rzzFaNefDLo" target="_blank">
+    <img src="https://img.youtube.com/vi/rzzFaNefDLo/0.jpg" alt="Project Banner" style="border-radius: 15px;width: 100%;">
+  </a>
 </div>
 
 ---
